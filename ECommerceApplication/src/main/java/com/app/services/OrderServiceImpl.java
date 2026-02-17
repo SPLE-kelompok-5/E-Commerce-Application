@@ -24,6 +24,7 @@ import com.app.exceptions.ResourceNotFoundException;
 import com.app.payloads.OrderDTO;
 import com.app.payloads.OrderItemDTO;
 import com.app.payloads.OrderResponse;
+import com.app.payloads.PromoDTO;
 import com.app.repositories.CartItemRepo;
 import com.app.repositories.CartRepo;
 import com.app.repositories.OrderItemRepo;
@@ -64,8 +65,11 @@ public class OrderServiceImpl implements OrderService {
 	@Autowired
 	public ModelMapper modelMapper;
 
+	@Autowired
+	private PromoService promoService;
+
 	@Override
-	public OrderDTO placeOrder(String email, Long cartId, String paymentMethod) {
+	public OrderDTO placeOrder(String email, Long cartId, String paymentMethod, String promoCode) {
 
 		Cart cart = cartRepo.findCartByEmailAndCartId(email, cartId);
 
@@ -73,13 +77,50 @@ public class OrderServiceImpl implements OrderService {
 			throw new ResourceNotFoundException("Cart", "cartId", cartId);
 		}
 
+		List<CartItem> cartItems = cart.getCartItems();
+
+		if (cartItems.size() == 0) {
+			throw new APIException("Cart is empty");
+		}
+
 		Order order = new Order();
 
 		order.setEmail(email);
 		order.setOrderDate(LocalDate.now());
-
-		order.setTotalAmount(cart.getTotalPrice());
 		order.setOrderStatus("Order Accepted !");
+
+		Double promoDiscountPercent = null;
+		if (promoCode != null && !promoCode.trim().isEmpty()) {
+			PromoDTO promo = promoService.validatePromoCode(promoCode.trim());
+			promoDiscountPercent = promo.getDiscount();
+		}
+
+		List<OrderItem> orderItems = new ArrayList<>();
+		double totalAmount = 0.0;
+
+		for (CartItem cartItem : cartItems) {
+			OrderItem orderItem = new OrderItem();
+
+			orderItem.setProduct(cartItem.getProduct());
+			orderItem.setQuantity(cartItem.getQuantity());
+			orderItem.setOrder(order);
+
+			if (promoDiscountPercent != null) {
+				Product product = cartItem.getProduct();
+				double basePrice = product.getPrice();
+				double finalUnitPrice = basePrice - (basePrice * promoDiscountPercent / 100.0);
+				orderItem.setDiscount(promoDiscountPercent);
+				orderItem.setOrderedProductPrice(finalUnitPrice);
+			} else {
+				orderItem.setDiscount(cartItem.getDiscount());
+				orderItem.setOrderedProductPrice(cartItem.getProductPrice());
+			}
+
+			orderItems.add(orderItem);
+			totalAmount += orderItem.getOrderedProductPrice() * orderItem.getQuantity();
+		}
+
+		order.setTotalAmount(totalAmount);
 
 		Payment payment = new Payment();
 		payment.setOrder(order);
@@ -91,24 +132,9 @@ public class OrderServiceImpl implements OrderService {
 
 		Order savedOrder = orderRepo.save(order);
 
-		List<CartItem> cartItems = cart.getCartItems();
-
-		if (cartItems.size() == 0) {
-			throw new APIException("Cart is empty");
-		}
-
-		List<OrderItem> orderItems = new ArrayList<>();
-
-		for (CartItem cartItem : cartItems) {
-			OrderItem orderItem = new OrderItem();
-
-			orderItem.setProduct(cartItem.getProduct());
-			orderItem.setQuantity(cartItem.getQuantity());
-			orderItem.setDiscount(cartItem.getDiscount());
-			orderItem.setOrderedProductPrice(cartItem.getProductPrice());
-			orderItem.setOrder(savedOrder);
-
-			orderItems.add(orderItem);
+		// ensure order reference on items is the persisted order
+		for (OrderItem item : orderItems) {
+			item.setOrder(savedOrder);
 		}
 
 		orderItems = orderItemRepo.saveAll(orderItems);
