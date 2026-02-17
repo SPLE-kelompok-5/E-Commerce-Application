@@ -136,7 +136,6 @@ public class ECommerceApplication implements CommandLineRunner {
                     admin.setAddresses(List.of(address1));
 
                     Cart adminCart = new Cart();
-                    adminCart.setTotalPrice(0.0);
                     adminCart.setUser(admin);
                     admin.setCart(adminCart);
 
@@ -150,10 +149,8 @@ public class ECommerceApplication implements CommandLineRunner {
                     user1.setAddresses(List.of(address2));
 
                     Cart user1Cart = new Cart();
-                    user1Cart.setTotalPrice(0.0);
                     user1Cart.setUser(user1);
                     user1.setCart(user1Cart);
-
 
                     User user2 = new User();
                     user2.setFirstName("Janette");
@@ -163,9 +160,8 @@ public class ECommerceApplication implements CommandLineRunner {
                     user2.setPassword(passwordEncoder.encode("user123"));
                     user2.setRoles(Set.of(userRole));
                     user2.setAddresses(List.of(address1, address2));
-                    
+
                     Cart user2Cart = new Cart();
-                    user2Cart.setTotalPrice(0.0);
                     user2Cart.setUser(user2);
                     user2.setCart(user2Cart);
 
@@ -224,9 +220,6 @@ public class ECommerceApplication implements CommandLineRunner {
                 }
 
                 if (storeDiscountRepo.count() == 0) {
-                    
-                    
-
                     // Create active store discount
                     StoreDiscount activeDiscount = new StoreDiscount();
                     activeDiscount.setDiscountName("Anniversary Sale");
@@ -255,7 +248,7 @@ public class ECommerceApplication implements CommandLineRunner {
                     storeDiscountRepo.save(expiredDiscount);
                 }
                 
-                return null; // Transaction callback requires a return
+                return null;
             });
 
             System.out.println("Seed data initialized successfully!");
