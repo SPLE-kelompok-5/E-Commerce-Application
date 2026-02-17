@@ -10,11 +10,12 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.PlatformTransactionManager; // Import 1
-import org.springframework.transaction.support.TransactionTemplate;   // Import 2
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.app.config.AppConstants;
 import com.app.entites.Address;
+import com.app.entites.Cart;
 import com.app.entites.Category;
 import com.app.entites.Product;
 import com.app.entites.Role;
@@ -51,7 +52,6 @@ public class ECommerceApplication implements CommandLineRunner {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // 1. Inject the Transaction Manager
     @Autowired
     private PlatformTransactionManager transactionManager;
 
@@ -67,7 +67,6 @@ public class ECommerceApplication implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         try {
-            // 2. Wrap your logic in a TransactionTemplate
             TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
             
             transactionTemplate.execute(status -> {
@@ -133,6 +132,10 @@ public class ECommerceApplication implements CommandLineRunner {
                     admin.setRoles(Set.of(adminRole));
                     admin.setAddresses(List.of(address1));
 
+                    Cart adminCart = new Cart();
+                    adminCart.setUser(admin);
+                    admin.setCart(adminCart);
+
                     User user1 = new User();
                     user1.setFirstName("Johnny");
                     user1.setLastName("Doenat");
@@ -142,6 +145,10 @@ public class ECommerceApplication implements CommandLineRunner {
                     user1.setRoles(Set.of(userRole));
                     user1.setAddresses(List.of(address2));
 
+                    Cart user1Cart = new Cart();
+                    user1Cart.setUser(user1);
+                    user1.setCart(user1Cart);
+
                     User user2 = new User();
                     user2.setFirstName("Janette");
                     user2.setLastName("Smith");
@@ -150,6 +157,10 @@ public class ECommerceApplication implements CommandLineRunner {
                     user2.setPassword(passwordEncoder.encode("user123"));
                     user2.setRoles(Set.of(userRole));
                     user2.setAddresses(List.of(address1, address2));
+
+                    Cart user2Cart = new Cart();
+                    user2Cart.setUser(user2);
+                    user2.setCart(user2Cart);
 
                     userRepo.saveAll(List.of(admin, user1, user2));
                 }
@@ -205,7 +216,7 @@ public class ECommerceApplication implements CommandLineRunner {
                     productRepo.saveAll(List.of(product1, product2, product3, product4));
                 }
                 
-                return null; // Transaction callback requires a return
+                return null;
             });
 
             System.out.println("Seed data initialized successfully!");
