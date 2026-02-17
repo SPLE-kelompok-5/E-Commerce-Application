@@ -17,11 +17,13 @@ import com.app.config.AppConstants;
 import com.app.entites.Address;
 import com.app.entites.Cart;
 import com.app.entites.Category;
+import com.app.entites.Payment;
 import com.app.entites.Product;
 import com.app.entites.Role;
 import com.app.entites.User;
 import com.app.repositories.AddressRepo;
 import com.app.repositories.CategoryRepo;
+import com.app.repositories.PaymentRepo;
 import com.app.repositories.ProductRepo;
 import com.app.repositories.RoleRepo;
 import com.app.repositories.UserRepo;
@@ -48,6 +50,9 @@ public class ECommerceApplication implements CommandLineRunner {
 
     @Autowired
     private ProductRepo productRepo;
+
+    @Autowired
+    private PaymentRepo paymentRepo;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -214,6 +219,28 @@ public class ECommerceApplication implements CommandLineRunner {
                     product4.setCategory(socksCategory);
 
                     productRepo.saveAll(List.of(product1, product2, product3, product4));
+                }
+
+                if (paymentRepo.count() == 0) {
+                    Payment paymentBca = new Payment();
+                    paymentBca.setBankName("Bank BCA");
+                    paymentBca.setStoreAccountNumber("0000000000");
+                    paymentRepo.save(paymentBca);
+
+                    Payment paymentMandiri = new Payment();
+                    paymentMandiri.setBankName("Bank Mandiri");
+                    paymentMandiri.setStoreAccountNumber("1111111111");
+                    paymentRepo.save(paymentMandiri);
+
+                    Payment paymentBni = new Payment();
+                    paymentBni.setBankName("Bank BNI");
+                    paymentBni.setStoreAccountNumber("2222222222");
+                    paymentRepo.save(paymentBni);
+
+                    Payment paymentBri = new Payment();
+                    paymentBri.setBankName("Bank BRI");
+                    paymentBri.setStoreAccountNumber("3333333333");
+                    paymentRepo.save(paymentBri);
                 }
                 
                 return null;

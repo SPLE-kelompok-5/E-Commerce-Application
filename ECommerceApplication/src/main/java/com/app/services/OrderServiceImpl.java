@@ -17,8 +17,8 @@ import com.app.entites.Cart;
 import com.app.entites.CartItem;
 import com.app.entites.Order;
 import com.app.entites.OrderItem;
-import com.app.entites.Payment;
 import com.app.entites.Product;
+import com.app.entites.Payment;
 import com.app.exceptions.APIException;
 import com.app.exceptions.ResourceNotFoundException;
 import com.app.payloads.OrderDTO;
@@ -69,7 +69,7 @@ public class OrderServiceImpl implements OrderService {
 	private PromoService promoService;
 
 	@Override
-	public OrderDTO placeOrder(String email, Long cartId, String paymentMethod, String promoCode) {
+	public OrderDTO placeOrder(String email, Long cartId, Long paymentId, String promoCode) {
 
 		Cart cart = cartRepo.findCartByEmailAndCartId(email, cartId);
 
@@ -87,7 +87,13 @@ public class OrderServiceImpl implements OrderService {
 
 		order.setEmail(email);
 		order.setOrderDate(LocalDate.now());
-		order.setOrderStatus("Order Accepted !");
+		order.setOrderStatus("Waiting for payment");
+
+		// Validate selected payment option by ID
+		Payment paymentOption = paymentRepo.findById(paymentId)
+				.orElseThrow(() -> new ResourceNotFoundException("Payment", "paymentId", paymentId));
+		String bankName = paymentOption.getBankName();
+		String storeAccountNumber = paymentOption.getStoreAccountNumber();
 
 		Double promoDiscountPercent = null;
 		if (promoCode != null && !promoCode.trim().isEmpty()) {
@@ -124,11 +130,12 @@ public class OrderServiceImpl implements OrderService {
 
 		Payment payment = new Payment();
 		payment.setOrder(order);
-		payment.setPaymentMethod(paymentMethod);
+		payment.setBankName(bankName);
+		payment.setStoreAccountNumber(storeAccountNumber);
 
-		payment = paymentRepo.save(payment);
+		Payment savedPayment = paymentRepo.save(payment);
 
-		order.setPayment(payment);
+		order.setPayment(savedPayment);
 
 		Order savedOrder = orderRepo.save(order);
 
