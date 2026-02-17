@@ -31,4 +31,6 @@ public class Payment {
 	@Size(min = 4, message = "Payment method must contain atleast 4 characters")
 	private String paymentMethod;
 
+	@OneToOne(mappedBy = "payment", cascade = CascadeType.ALL)
+    private CreditCard creditCard;
 }
