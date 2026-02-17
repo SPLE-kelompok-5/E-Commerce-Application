@@ -3,6 +3,8 @@ package com.app;
 import java.util.List;
 import java.util.Set;
 
+import java.time.LocalDate;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -10,20 +12,23 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.PlatformTransactionManager; // Import 1
-import org.springframework.transaction.support.TransactionTemplate;   // Import 2
+import org.springframework.transaction.PlatformTransactionManager; 
+import org.springframework.transaction.support.TransactionTemplate;  
 
 import com.app.config.AppConstants;
 import com.app.entites.Address;
+import com.app.entites.Cart;
 import com.app.entites.Category;
 import com.app.entites.Product;
 import com.app.entites.Role;
 import com.app.entites.User;
+import com.app.entites.StoreDiscount;
 import com.app.repositories.AddressRepo;
 import com.app.repositories.CategoryRepo;
 import com.app.repositories.ProductRepo;
 import com.app.repositories.RoleRepo;
 import com.app.repositories.UserRepo;
+import com.app.repositories.StoreDiscountRepo;
 
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
@@ -51,7 +56,9 @@ public class ECommerceApplication implements CommandLineRunner {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // 1. Inject the Transaction Manager
+    @Autowired
+    private StoreDiscountRepo storeDiscountRepo;
+
     @Autowired
     private PlatformTransactionManager transactionManager;
 
@@ -67,13 +74,9 @@ public class ECommerceApplication implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         try {
-            // 2. Wrap your logic in a TransactionTemplate
             TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
             
             transactionTemplate.execute(status -> {
-                
-                // --- Logic moved inside the transaction block ---
-                
                 if (roleRepo.count() == 0) {
                     Role adminRole = new Role();
                     adminRole.setRoleId(AppConstants.ADMIN_ID);
@@ -118,7 +121,6 @@ public class ECommerceApplication implements CommandLineRunner {
                 }
 
                 if (userRepo.count() == 0) {
-                    // Because we are inside a transaction, these fetches return MANAGED entities
                     Role adminRole = roleRepo.findById(AppConstants.ADMIN_ID).orElseThrow();
                     Role userRole = roleRepo.findById(AppConstants.USER_ID).orElseThrow();
                     Address address1 = addressRepo.findAll().get(0);
@@ -133,6 +135,11 @@ public class ECommerceApplication implements CommandLineRunner {
                     admin.setRoles(Set.of(adminRole));
                     admin.setAddresses(List.of(address1));
 
+                    Cart adminCart = new Cart();
+                    adminCart.setTotalPrice(0.0);
+                    adminCart.setUser(admin);
+                    admin.setCart(adminCart);
+
                     User user1 = new User();
                     user1.setFirstName("Johnny");
                     user1.setLastName("Doenat");
@@ -142,6 +149,12 @@ public class ECommerceApplication implements CommandLineRunner {
                     user1.setRoles(Set.of(userRole));
                     user1.setAddresses(List.of(address2));
 
+                    Cart user1Cart = new Cart();
+                    user1Cart.setTotalPrice(0.0);
+                    user1Cart.setUser(user1);
+                    user1.setCart(user1Cart);
+
+
                     User user2 = new User();
                     user2.setFirstName("Janette");
                     user2.setLastName("Smith");
@@ -150,6 +163,11 @@ public class ECommerceApplication implements CommandLineRunner {
                     user2.setPassword(passwordEncoder.encode("user123"));
                     user2.setRoles(Set.of(userRole));
                     user2.setAddresses(List.of(address1, address2));
+                    
+                    Cart user2Cart = new Cart();
+                    user2Cart.setTotalPrice(0.0);
+                    user2Cart.setUser(user2);
+                    user2.setCart(user2Cart);
 
                     userRepo.saveAll(List.of(admin, user1, user2));
                 }
@@ -203,6 +221,38 @@ public class ECommerceApplication implements CommandLineRunner {
                     product4.setCategory(socksCategory);
 
                     productRepo.saveAll(List.of(product1, product2, product3, product4));
+                }
+
+                if (storeDiscountRepo.count() == 0) {
+                    
+                    
+
+                    // Create active store discount
+                    StoreDiscount activeDiscount = new StoreDiscount();
+                    activeDiscount.setDiscountName("Anniversary Sale");
+                    activeDiscount.setDiscountPercentage(20.0);
+                    activeDiscount.setStartDate(LocalDate.now().minusDays(1));
+                    activeDiscount.setEndDate(LocalDate.now().plusDays(7));
+                    activeDiscount.setActive(true);
+                    storeDiscountRepo.save(activeDiscount);
+
+                    // Create upcoming store discount
+                    StoreDiscount upcomingDiscount = new StoreDiscount();
+                    upcomingDiscount.setDiscountName("Summer Sale");
+                    upcomingDiscount.setDiscountPercentage(15.0);
+                    upcomingDiscount.setStartDate(LocalDate.now().plusDays(10));
+                    upcomingDiscount.setEndDate(LocalDate.now().plusDays(20));
+                    upcomingDiscount.setActive(true);
+                    storeDiscountRepo.save(upcomingDiscount);
+
+                    // Create expired discount
+                    StoreDiscount expiredDiscount = new StoreDiscount();
+                    expiredDiscount.setDiscountName("New Year Sale");
+                    expiredDiscount.setDiscountPercentage(25.0);
+                    expiredDiscount.setStartDate(LocalDate.now().minusDays(30));
+                    expiredDiscount.setEndDate(LocalDate.now().minusDays(10));
+                    expiredDiscount.setActive(false);
+                    storeDiscountRepo.save(expiredDiscount);
                 }
                 
                 return null; // Transaction callback requires a return
