@@ -43,7 +43,7 @@ public class PromoController {
 	public ResponseEntity<PromoResponse> getAllPromos(
 			@RequestParam(name = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) Integer pageNumber,
 			@RequestParam(name = "pageSize", defaultValue = AppConstants.PAGE_SIZE, required = false) Integer pageSize,
-			@RequestParam(name = "sortBy", defaultValue = AppConstants.SORT_ORDERS_BY, required = false) String sortBy,
+            @RequestParam(name = "sortBy", defaultValue = AppConstants.SORT_PROMOS_BY, required = false) String sortBy,
 			@RequestParam(name = "sortOrder", defaultValue = AppConstants.SORT_DIR, required = false) String sortOrder) {
 		
 		PromoResponse promoResponse = promoService.getAllPromos(pageNumber, pageSize, sortBy, sortOrder);
