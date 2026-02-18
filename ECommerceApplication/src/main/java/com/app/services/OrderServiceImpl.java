@@ -89,11 +89,9 @@ public class OrderServiceImpl implements OrderService {
 		order.setOrderDate(LocalDate.now());
 		order.setOrderStatus("Waiting for payment");
 
-		// Validate selected payment option by ID
+		// Validate selected payment option by ID (reuse existing payment method)
 		Payment paymentOption = paymentRepo.findById(paymentId)
 				.orElseThrow(() -> new ResourceNotFoundException("Payment", "paymentId", paymentId));
-		String bankName = paymentOption.getBankName();
-		String storeAccountNumber = paymentOption.getStoreAccountNumber();
 
 		Double promoDiscountPercent = null;
 		if (promoCode != null && !promoCode.trim().isEmpty()) {
@@ -128,14 +126,8 @@ public class OrderServiceImpl implements OrderService {
 
 		order.setTotalAmount(totalAmount);
 
-		Payment payment = new Payment();
-		payment.setOrder(order);
-		payment.setBankName(bankName);
-		payment.setStoreAccountNumber(storeAccountNumber);
-
-		Payment savedPayment = paymentRepo.save(payment);
-
-		order.setPayment(savedPayment);
+		// Link order to the chosen existing payment method
+		order.setPayment(paymentOption);
 
 		Order savedOrder = orderRepo.save(order);
 
