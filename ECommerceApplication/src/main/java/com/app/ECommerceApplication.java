@@ -1,5 +1,6 @@
 package com.app;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
@@ -19,12 +20,14 @@ import com.app.entites.Cart;
 import com.app.entites.Category;
 import com.app.entites.Payment;
 import com.app.entites.Product;
+import com.app.entites.Promo;
 import com.app.entites.Role;
 import com.app.entites.User;
 import com.app.repositories.AddressRepo;
 import com.app.repositories.CategoryRepo;
 import com.app.repositories.PaymentRepo;
 import com.app.repositories.ProductRepo;
+import com.app.repositories.PromoRepo;
 import com.app.repositories.RoleRepo;
 import com.app.repositories.UserRepo;
 
@@ -53,6 +56,9 @@ public class ECommerceApplication implements CommandLineRunner {
 
     @Autowired
     private PaymentRepo paymentRepo;
+
+    @Autowired
+    private PromoRepo promoRepo;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -241,6 +247,26 @@ public class ECommerceApplication implements CommandLineRunner {
                     paymentBri.setBankName("Bank BRI");
                     paymentBri.setStoreAccountNumber("3333333333");
                     paymentRepo.save(paymentBri);
+                }
+
+                if (promoRepo.count() == 0) {
+                    Promo promo10 = new Promo();
+                    promo10.setPromoCode("PROMO10");
+                    promo10.setDiscount(10);
+                    promo10.setExpiry(LocalDate.now().plusMonths(1));
+                    promoRepo.save(promo10);
+
+                    Promo promo20 = new Promo();
+                    promo20.setPromoCode("PROMO20");
+                    promo20.setDiscount(20);
+                    promo20.setExpiry(LocalDate.now().plusMonths(1));
+                    promoRepo.save(promo20);
+
+                    Promo promo50 = new Promo();
+                    promo50.setPromoCode("PROMO50");
+                    promo50.setDiscount(50);
+                    promo50.setExpiry(LocalDate.now().plusMonths(1));
+                    promoRepo.save(promo50);
                 }
                 
                 return null;
