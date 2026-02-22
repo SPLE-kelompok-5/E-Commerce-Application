@@ -106,7 +106,7 @@ public class OrderServiceImpl implements OrderService {
 
         order.setPayment(payment);
 
-        // Get active store discount
+        // Get active store discount (start <= current <= end)
         StoreDiscount activeDiscount = storeDiscountRepo.findActiveDiscount(LocalDate.now()).orElse(null);
 
         List<OrderItem> orderItems = new ArrayList<>();
@@ -166,7 +166,6 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderDTO placeOrderWithCreditCard(String email, Long cartId, CreditCardDTO creditCardDTO) {
-        // 1. Find cart
         Cart cart = cartRepo.findCartByEmailAndCartId(email, cartId);
         if (cart == null) {
             throw new ResourceNotFoundException("Cart", "cartId", cartId);
@@ -176,27 +175,22 @@ public class OrderServiceImpl implements OrderService {
             throw new APIException("Cart is empty");
         }
         
-        // 2. Create payment
         Payment payment = new Payment();
         payment.setPaymentMethod("CREDIT_CARD");
         payment = paymentRepo.save(payment);
         
-        // 3. Create credit card
         CreditCard creditCard = modelMapper.map(creditCardDTO, CreditCard.class);
         creditCard.setPayment(payment);
         creditCardRepo.save(creditCard);
         
-        // 4. Get active store discount
         StoreDiscount activeDiscount = storeDiscountRepo.findActiveDiscount(LocalDate.now()).orElse(null);
         
-        // 5. Create order
         Order order = new Order();
         order.setEmail(email);
         order.setOrderDate(LocalDate.now());
         order.setPayment(payment);
         order.setOrderStatus("Order Accepted !");
         
-        // 6. Create order items with discount - FIXED LOGIC
         List<OrderItem> orderItems = new ArrayList<>();
         double totalAmount = 0.0;
         
@@ -209,10 +203,8 @@ public class OrderServiceImpl implements OrderService {
             Product product = cartItem.getProduct();
             double basePrice = product.getPrice();
             double quantity = cartItem.getQuantity();
-            
-            // Apply store discount if active, otherwise use product's special price
+     
             if (activeDiscount != null) {
-                // Use store discount - apply to base price
                 orderItem.setDiscount(activeDiscount.getDiscountPercentage());
                 orderItem.setOrderedProductPrice(basePrice);
                 
@@ -220,7 +212,6 @@ public class OrderServiceImpl implements OrderService {
                 double discountAmount = itemTotal * (activeDiscount.getDiscountPercentage() / 100.0);
                 totalAmount += (itemTotal - discountAmount);
             } else {
-                // Use product discount - use special_price
                 orderItem.setDiscount(product.getDiscount());
                 orderItem.setOrderedProductPrice(product.getSpecialPrice());
                 
@@ -234,7 +225,7 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalAmount(totalAmount);
         order = orderRepo.save(order);
         
-        // 7. Clear cart items and update product quantities
+        // Clear cart items and update product quantities
         List<CartItem> cartItemsCopy = new ArrayList<>(cart.getCartItems());
         for (CartItem item : cartItemsCopy) {
             Product product = item.getProduct();
@@ -245,7 +236,6 @@ public class OrderServiceImpl implements OrderService {
             cartService.deleteProductFromCart(cartId, productId);
         }
         
-        // 8. Convert to DTO
         OrderDTO orderDTO = modelMapper.map(order, OrderDTO.class);
         
         List<OrderItemDTO> orderItemDTOs = orderItems.stream()
