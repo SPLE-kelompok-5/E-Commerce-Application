@@ -25,6 +25,7 @@ import com.app.payloads.ProductResponse;
 import com.app.repositories.CartRepo;
 import com.app.repositories.CategoryRepo;
 import com.app.repositories.ProductRepo;
+import com.app.repositories.ReviewRepo;
 
 import jakarta.transaction.Transactional;
 
@@ -49,6 +50,9 @@ public class ProductServiceImpl implements ProductService {
 
 	@Autowired
 	private ModelMapper modelMapper;
+
+	@Autowired
+	private ReviewRepo reviewRepo;
 
 	@Value("${project.image}")
 	private String path;
@@ -82,7 +86,9 @@ public class ProductServiceImpl implements ProductService {
 
 			Product savedProduct = productRepo.save(product);
 
-			return modelMapper.map(savedProduct, ProductDTO.class);
+			ProductDTO productDTO = modelMapper.map(savedProduct, ProductDTO.class);
+			enrichReviewStats(productDTO);
+			return productDTO;
 		} else {
 			throw new APIException("Product already exists !!!");
 		}
@@ -100,7 +106,11 @@ public class ProductServiceImpl implements ProductService {
 
 		List<Product> products = pageProducts.getContent();
 
-		List<ProductDTO> productDTOs = products.stream().map(product -> modelMapper.map(product, ProductDTO.class))
+		List<ProductDTO> productDTOs = products.stream().map(product -> {
+			ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
+			enrichReviewStats(productDTO);
+			return productDTO;
+		})
 				.collect(Collectors.toList());
 
 		ProductResponse productResponse = new ProductResponse();
@@ -135,7 +145,11 @@ public class ProductServiceImpl implements ProductService {
 			throw new APIException(category.getCategoryName() + " category doesn't contain any products !!!");
 		}
 
-		List<ProductDTO> productDTOs = products.stream().map(p -> modelMapper.map(p, ProductDTO.class))
+		List<ProductDTO> productDTOs = products.stream().map(p -> {
+			ProductDTO productDTO = modelMapper.map(p, ProductDTO.class);
+			enrichReviewStats(productDTO);
+			return productDTO;
+		})
 				.collect(Collectors.toList());
 
 		ProductResponse productResponse = new ProductResponse();
@@ -165,7 +179,11 @@ public class ProductServiceImpl implements ProductService {
 			throw new APIException("Products not found with keyword: " + keyword);
 		}
 
-		List<ProductDTO> productDTOs = products.stream().map(p -> modelMapper.map(p, ProductDTO.class))
+		List<ProductDTO> productDTOs = products.stream().map(p -> {
+			ProductDTO productDTO = modelMapper.map(p, ProductDTO.class);
+			enrichReviewStats(productDTO);
+			return productDTO;
+		})
 				.collect(Collectors.toList());
 
 		ProductResponse productResponse = new ProductResponse();
@@ -214,7 +232,9 @@ public class ProductServiceImpl implements ProductService {
 
 		cartDTOs.forEach(cart -> cartService.updateProductInCarts(cart.getCartId(), productId));
 
-		return modelMapper.map(savedProduct, ProductDTO.class);
+		ProductDTO productDTO = modelMapper.map(savedProduct, ProductDTO.class);
+		enrichReviewStats(productDTO);
+		return productDTO;
 	}
 
 	@Override
@@ -232,7 +252,9 @@ public class ProductServiceImpl implements ProductService {
 		
 		Product updatedProduct = productRepo.save(productFromDB);
 		
-		return modelMapper.map(updatedProduct, ProductDTO.class);
+		ProductDTO productDTO = modelMapper.map(updatedProduct, ProductDTO.class);
+		enrichReviewStats(productDTO);
+		return productDTO;
 	}
 	
 	@Override
@@ -248,6 +270,14 @@ public class ProductServiceImpl implements ProductService {
 		productRepo.delete(product);
 
 		return "Product with productId: " + productId + " deleted successfully !!!";
+	}
+
+	private void enrichReviewStats(ProductDTO productDTO) {
+		Double averageRating = reviewRepo.findAverageRatingByProductId(productDTO.getProductId());
+		Long reviewCount = reviewRepo.countByProduct_ProductId(productDTO.getProductId());
+
+		productDTO.setAverageRating(averageRating == null ? 0.0 : averageRating);
+		productDTO.setReviewCount(reviewCount == null ? 0L : reviewCount);
 	}
 
 }
