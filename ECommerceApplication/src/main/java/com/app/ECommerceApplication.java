@@ -23,6 +23,7 @@ import com.app.entites.Product;
 import com.app.entites.Promo;
 import com.app.entites.Role;
 import com.app.entites.User;
+import com.app.entites.Wishlist;
 import com.app.repositories.AddressRepo;
 import com.app.repositories.CategoryRepo;
 import com.app.repositories.PaymentRepo;
@@ -81,9 +82,6 @@ public class ECommerceApplication implements CommandLineRunner {
             TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
             
             transactionTemplate.execute(status -> {
-                
-                // --- Logic moved inside the transaction block ---
-                
                 if (roleRepo.count() == 0) {
                     Role adminRole = new Role();
                     adminRole.setRoleId(AppConstants.ADMIN_ID);
@@ -147,6 +145,10 @@ public class ECommerceApplication implements CommandLineRunner {
                     adminCart.setUser(admin);
                     admin.setCart(adminCart);
 
+                    Wishlist adminWishlist = new Wishlist();
+                    adminWishlist.setUser(admin);
+                    admin.setWishlist(adminWishlist);
+
                     User user1 = new User();
                     user1.setFirstName("Johnny");
                     user1.setLastName("Doenat");
@@ -160,6 +162,10 @@ public class ECommerceApplication implements CommandLineRunner {
                     user1Cart.setUser(user1);
                     user1.setCart(user1Cart);
 
+                    Wishlist user1Wishlist = new Wishlist();
+                    user1Wishlist.setUser(user1);
+                    user1.setWishlist(user1Wishlist);
+
                     User user2 = new User();
                     user2.setFirstName("Janette");
                     user2.setLastName("Smith");
@@ -172,6 +178,10 @@ public class ECommerceApplication implements CommandLineRunner {
                     Cart user2Cart = new Cart();
                     user2Cart.setUser(user2);
                     user2.setCart(user2Cart);
+
+                    Wishlist user2Wishlist = new Wishlist();
+                    user2Wishlist.setUser(user2);
+                    user2.setWishlist(user2Wishlist);
 
                     userRepo.saveAll(List.of(admin, user1, user2));
                 }
